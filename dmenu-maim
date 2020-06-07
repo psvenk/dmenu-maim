@@ -40,7 +40,7 @@ from os import path, remove
 from tempfile import NamedTemporaryFile
 
 # Character used to indicate end of options
-DONE = "d"
+DONE = ";"
 
 # dmenu command line (this will be followed by the prompt)
 DMENU = ["dmenu", "-i", "-p"]
