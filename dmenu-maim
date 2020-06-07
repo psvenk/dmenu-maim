@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-# dmenu-maim: dmenu wrapper for maim supporting saving to a file and copying to
-# the system clipboard, using the entire screen, a selection, or the currently
-# focused window
+# dmenu-maim
+# dmenu wrapper for maim supporting saving to a file and copying to the system
+# clipboard, using the entire screen, a selection, or the currently focused
+# window
 #
 # Last updated 2020-06-07
 #
 # Dependencies: maim (and slop), xdotool, xclip
 
 # Copyright (c) 2020 psvenk
+#
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
 #
 # 2. Redistributions in binary form must reproduce the above copyright notice,
 #    this list of conditions and the following disclaimer in the documentation
@@ -22,32 +24,46 @@
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 from subprocess import Popen, PIPE, DEVNULL, run
 from datetime import datetime
 from os import path, remove
 from tempfile import NamedTemporaryFile
 
-# Available options for screenshot (at least one of 's' or 'c' must be provided)
-options = {
+# Character used to indicate end of options
+DONE = "d"
+
+# dmenu command line (this will be followed by the prompt)
+DMENU = ["dmenu", "-i", "-p"]
+
+# xclip command line (this will take the image file as stdin)
+XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
+
+# The maim command line needs to be configured manually; there is no easy and
+# Pythonic way to abstract that out
+
+# Available options for screenshot (at least one of 's' or 'c' must be
+# provided)
+OPTIONS = {
     "s": "Save to file",
     "c": "Copy to clipboard",
     "p": "Include mouse pointer",
 }
 
 # Available modes for screenshot (exactly one must be provided)
-modes = {
+MODES = {
     "d": "Desktop",
     "s": "Selection",
-    "w": "Window"
+    "w": "Window",
 }
 
 opts = ""
@@ -56,38 +72,38 @@ done = False
 # Get options for screenshot
 while not done:
     optstring = f"Options ({opts})" if opts else "Options"
-    dmenu = Popen(["dmenu", "-i", "-p", optstring],
+    dmenu = Popen([*DMENU, optstring],
                   stdin=PIPE, stdout=PIPE, text=True)
 
     # Populate list of available options
-    dmenu.stdin.write("d: Done\n")
-    for o, desc in options.items():
+    dmenu.stdin.write(f"{DONE}: Done\n")
+    for o, desc in OPTIONS.items():
         if o not in opts:
             dmenu.stdin.write(f"{o}: {desc}\n")
 
     # Get stdout from dmenu process, strip whitespace, only pay attention to
     # characters before a colon (if present), and convert to lowercase
     result = dmenu.communicate()[0].strip().split(":")[0].lower()
-    for o in options.keys():
+    for o in OPTIONS.keys():
         if o in result:
             opts += o
 
-    if "d" in result or not result:
+    if DONE in result or not result:
         done = True
 
 if "s" not in opts and "c" not in opts:
     exit(1)
 
 # Get screenshot mode
-dmenu = Popen(["dmenu", "-i", "-p", "Mode"],
+dmenu = Popen([*DMENU, "Mode"],
               stdin=PIPE, stdout=PIPE, text=True)
-for m, desc in modes.items():
+for m, desc in MODES.items():
     dmenu.stdin.write(f"{m}: {desc}\n")
 
 # Get first character of stdout and convert to lowercase
 mode = dmenu.communicate()[0].strip()[0].lower()
 
-if mode not in modes:
+if mode not in MODES:
     exit(1)
 
 if "s" in opts:
@@ -116,8 +132,7 @@ outfile.close()
 
 if "c" in opts:
     with open(outfile.name) as infile:
-        run(["xclip", "-selection", "clipboard", "-t", "image/png"],
-            stdin=infile)
+        run(XCLIP, stdin=infile)
 
 if "s" not in opts:
     remove(outfile.name)
