@@ -6,7 +6,13 @@ dmenu wrapper for maim supporting saving to a file and copying to the system
 clipboard, using the entire screen, a selection, or the currently focused
 window
 
-Dependencies: maim (and slop), xdotool, xclip
+Dependencies: dmenu, maim (and slop), xdotool, xclip
+
+Arch Linux package
+==================
+
+Running ``makepkg --noextract`` should create an Arch Linux package. This
+works because ``src/dmenu-maim`` is a symlink to the root of the repository.
 
 License
 =======

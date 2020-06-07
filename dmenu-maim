@@ -6,7 +6,7 @@
 #
 # Last updated 2020-06-07
 #
-# Dependencies: maim (and slop), xdotool, xclip
+# Dependencies: dmenu, maim (and slop), xdotool, xclip
 
 # Copyright (c) 2020 psvenk
 #
