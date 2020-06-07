@@ -3,6 +3,8 @@
 # the system clipboard, using the entire screen, a selection, or the currently
 # focused window
 #
+# Last updated 2020-06-07
+#
 # Dependencies: maim (and slop), xdotool, xclip
 
 # Copyright (c) 2020 psvenk
