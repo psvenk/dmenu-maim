@@ -1,11 +1,11 @@
 _pkgname=dmenu-maim
 pkgname=$_pkgname-git
-pkgver=r5.c509f75
+pkgver=r7.b89d79e
 pkgrel=1
 pkgdesc='dmenu-maim'
 arch=('any')
 url='https://github.com/psvenk/dmenu-maim'
-license=('2BSD')
+license=('BSD2')
 depends=('dmenu' 'maim' 'xdotool' 'xclip')
 makedepends=('git')
 provides=($_pkgname)
