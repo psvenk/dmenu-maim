@@ -4,11 +4,12 @@
 # clipboard, using the entire screen, a selection, or the currently focused
 # window
 #
-# Last updated 2020-06-07
+# Last updated 2021-11-15
 #
-# Dependencies: dmenu, maim (and slop), xdotool, xclip
+# Dependencies (X11): dmenu, maim (and slop), xdotool, xclip
+# Dependencies (Wayland): dmenu, grim, slurp, swaymsg, wl-clipboard
 
-# Copyright (c) 2020 psvenk
+# Copyright (c) 2020-21 Pratyush Venkatakrishnan
 #
 # All rights reserved.
 #
@@ -34,7 +35,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from subprocess import Popen, PIPE, DEVNULL, run
+from subprocess import Popen, PIPE, DEVNULL, run, check_output
 from datetime import datetime
 from os import path, remove
 from tempfile import NamedTemporaryFile
@@ -46,7 +47,8 @@ DONE = ";"
 DMENU = ["dmenu", "-i", "-p"]
 
 # xclip command line (this will take the image file as stdin)
-XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
+# XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
+XCLIP = ["wl-copy", "-t", "image/png"]
 
 # The maim command line needs to be configured manually; there is no easy and
 # Pythonic way to abstract that out
@@ -114,6 +116,7 @@ if "s" in opts:
 else:
     outfile = NamedTemporaryFile(mode="wb", delete=False)
 
+'''
 cmdline = ["maim"]
 if "p" not in opts:
     # Hide mouse pointer
@@ -126,9 +129,27 @@ elif mode == "w":
     current_window = run(["xdotool", "getactivewindow"],
                          capture_output=True, text=True).stdout.strip()
     cmdline.extend(["-i", current_window])
+'''
 
-run(cmdline, stdin=DEVNULL, stdout=outfile, stderr=DEVNULL)
+cmdline = ["grim"]
+if "p" in opts:
+    # Show mouse pointer
+    cmdline.append("-c")
+if mode == "s":
+    # Grab a selection instead of the entire desktop
+    selection = check_output(["slurp"], text=True).strip()
+    cmdline.extend(["-g", selection])
+elif mode == "w":
+    # Grab current window
+    current_window = check_output(
+        r"""swaymsg -t get_tree | jq -j '.. | select(.type?)
+            | select(.focused).rect | "\(.x),\(.y) \(.width)x\(.height)"'""",
+        text=True, shell=True).strip()
+    cmdline.extend(["-g", current_window])
+
 outfile.close()
+cmdline.append(outfile.name)
+run(cmdline, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
 
 if "c" in opts:
     with open(outfile.name) as infile:
