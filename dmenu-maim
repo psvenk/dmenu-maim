@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # dmenu-maim
-# dmenu wrapper for maim supporting saving to a file and copying to the system
-# clipboard, using the entire screen, a selection, or the currently focused
-# window
+# dmenu wrapper for maim (X11) or grim (Wayland), supporting saving to a file
+# and copying to the system clipboard, using the entire screen, a selection, or
+# the currently focused window.
 #
-# Last updated 2021-11-15
+# Last updated 2021-11-17
 #
 # Dependencies (X11): dmenu, maim (and slop), xdotool, xclip
-# Dependencies (Wayland): dmenu, grim, slurp, swaymsg, wl-clipboard
+# Dependencies (Wayland): dmenu, grim, slurp, wl-clipboard
 
 # Copyright (c) 2020-21 Pratyush Venkatakrishnan
 #
@@ -37,8 +37,13 @@
 
 from subprocess import Popen, PIPE, DEVNULL, run, check_output
 from datetime import datetime
-from os import path, remove
+from os import path, remove, getenv
 from tempfile import NamedTemporaryFile
+
+if getenv("WAYLAND_DISPLAY"):
+    wayland = True
+else:
+    wayland = False
 
 # Character used to indicate end of options
 DONE = ";"
@@ -47,8 +52,10 @@ DONE = ";"
 DMENU = ["dmenu", "-i", "-p"]
 
 # xclip command line (this will take the image file as stdin)
-# XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
-XCLIP = ["wl-copy", "-t", "image/png"]
+if wayland:
+    XCLIP = ["wl-copy", "-t", "image/png"]
+else:
+    XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
 
 # The maim command line needs to be configured manually; there is no easy and
 # Pythonic way to abstract that out
@@ -116,40 +123,44 @@ if "s" in opts:
 else:
     outfile = NamedTemporaryFile(mode="wb", delete=False)
 
-'''
-cmdline = ["maim"]
-if "p" not in opts:
-    # Hide mouse pointer
-    cmdline.append("-u")
-if mode == "s":
-    # Grab a selection instead of the entire desktop
-    cmdline.append("-s")
-elif mode == "w":
-    # Grab current window
-    current_window = run(["xdotool", "getactivewindow"],
-                         capture_output=True, text=True).stdout.strip()
-    cmdline.extend(["-i", current_window])
-'''
+if wayland:
+    cmdline = ["grim"]
+    if "p" in opts:
+        # Show mouse pointer
+        cmdline.append("-c")
+    if mode == "s":
+        # Grab a selection instead of the entire desktop
+        selection = check_output(["slurp"], text=True).strip()
+        cmdline.extend(["-g", selection])
+    elif mode == "w":
+        # Grab current window
+        current_window = check_output(
+            r"""swaymsg -t get_tree
+                | jq -j '.. | select(.type?) | select(.focused).rect
+                    | "\(.x),\(.y) \(.width)x\(.height)"'
+            """,
+            text=True, shell=True).strip()
+        cmdline.extend(["-g", current_window])
 
-cmdline = ["grim"]
-if "p" in opts:
-    # Show mouse pointer
-    cmdline.append("-c")
-if mode == "s":
-    # Grab a selection instead of the entire desktop
-    selection = check_output(["slurp"], text=True).strip()
-    cmdline.extend(["-g", selection])
-elif mode == "w":
-    # Grab current window
-    current_window = check_output(
-        r"""swaymsg -t get_tree | jq -j '.. | select(.type?)
-            | select(.focused).rect | "\(.x),\(.y) \(.width)x\(.height)"'""",
-        text=True, shell=True).strip()
-    cmdline.extend(["-g", current_window])
+    outfile.close()
+    outfile.append(outfile.name)
+    run(cmdline, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+else:
+    cmdline = ["maim"]
+    if "p" not in opts:
+        # Hide mouse pointer
+        cmdline.append("-u")
+    if mode == "s":
+        # Grab a selection instead of the entire desktop
+        cmdline.append("-s")
+    elif mode == "w":
+        # Grab current window
+        current_window = run(["xdotool", "getactivewindow"],
+                             capture_output=True, text=True).stdout.strip()
+        cmdline.extend(["-i", current_window])
 
-outfile.close()
-cmdline.append(outfile.name)
-run(cmdline, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+    run(cmdline, stdin=DEVNULL, stdout=outfile, stderr=DEVNULL)
+    outfile.close()
 
 if "c" in opts:
     with open(outfile.name) as infile:

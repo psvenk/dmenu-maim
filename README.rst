@@ -2,11 +2,32 @@
 dmenu-maim
 ==========
 
-dmenu wrapper for maim supporting saving to a file and copying to the system
-clipboard, using the entire screen, a selection, or the currently focused
-window
+dmenu wrapper for maim (X11) or grim (Wayland), supporting saving to a file
+and copying to the system clipboard, using the entire screen, a selection, or
+the currently focused window.
 
-Dependencies: dmenu, maim (and slop), xdotool, xclip
+Dependencies (X11): dmenu_, maim_ (and slop_), xdotool_, xclip_
+
+Dependencies (Wayland): dmenu_, grim_, slurp_, wl-clipboard_
+
+On Wayland, taking a screenshot of the selected window is currently only
+supported on Sway_, because ``swaymsg`` is used to get the current window (as
+in the example in |the grim README|_).
+
+.. _dmenu: https://tools.suckless.org/dmenu/
+.. _maim: https://github.com/naelstrof/maim
+.. _slop: https://github.com/naelstrof/slop
+.. _xdotool: https://www.semicomplete.com/projects/xdotool/
+.. _xclip: https://github.com/astrand/xclip
+.. _grim: https://wayland.emersion.fr/grim/
+.. _slurp: https://wayland.emersion.fr/slurp/
+.. _wl-clipboard: https://github.com/bugaevc/wl-clipboard
+
+.. _Sway: https://swaywm.org/
+.. |the grim README| replace:: the ``grim`` README
+.. _the grim README:
+   https://github.com/emersion/grim/blob/
+   d570e13d6fa343507ebaafcc390142aa21cf591a/README.md
 
 Arch Linux package
 ==================
@@ -17,7 +38,7 @@ works because ``src/dmenu-maim`` is a symlink to the root of the repository.
 License
 =======
 
-Copyright (c) 2020 psvenk
+Copyright (c) 2020-21 Pratyush Venkatakrishnan
 
 All rights reserved.
 
