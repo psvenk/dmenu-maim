@@ -135,7 +135,7 @@ if wayland:
     elif mode == "w":
         # Grab current window
         current_window = check_output(
-            r"""swaymsg -t get_tree
+            r"""swaymsg -t get_tree \
                 | jq -j '.. | select(.type?) | select(.focused).rect
                     | "\(.x),\(.y) \(.width)x\(.height)"'
             """,
