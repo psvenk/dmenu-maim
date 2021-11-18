@@ -143,7 +143,7 @@ if wayland:
         cmdline.extend(["-g", current_window])
 
     outfile.close()
-    outfile.append(outfile.name)
+    cmdline.append(outfile.name)
     run(cmdline, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
 else:
     cmdline = ["maim"]
