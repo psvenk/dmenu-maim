@@ -1,6 +1,6 @@
 _pkgname=dmenu-maim
 pkgname=$_pkgname-git
-pkgver=r12.31acdf0
+pkgver=r13.d3ffacf
 pkgrel=1
 pkgdesc='dmenu-maim'
 arch=('any')

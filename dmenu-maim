@@ -4,7 +4,7 @@
 # and copying to the system clipboard, using the entire screen, a selection, or
 # the currently focused window.
 #
-# Last updated 2021-11-19
+# Last updated 2021-11-20
 #
 # Dependencies (X11): dmenu, maim (and slop), xdotool, xclip
 # Dependencies (Wayland): dmenu, grim, slurp, wl-clipboard

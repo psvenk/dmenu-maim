@@ -46,7 +46,7 @@ configured in the file ``$XDG_CONFIG_HOME/dmenu-maim/config.ini`` (usually
 .. code:: dosini
   [x11]
   dmenu=dmenu -i -p
-  xclip=xclip -selection -clipboard -t image/png
+  xclip=xclip -selection clipboard -t image/png
 
   [wayland]
   dmenu=bemenu -i -p
