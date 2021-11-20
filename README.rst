@@ -35,6 +35,23 @@ Arch Linux package
 Running ``makepkg --noextract`` should create an Arch Linux package. This
 works because ``src/dmenu-maim`` is a symlink to the root of the repository.
 
+Configuration
+=============
+
+The command lines used for ``dmenu`` and ``xclip`` / ``wl-copy`` can be
+configured in the file ``$XDG_CONFIG_HOME/dmenu-maim/config.ini`` (usually
+``~/.config/dmenu-maim/config.ini``). Here is a sample config file which uses
+``bemenu`` instead of ``dmenu`` on Wayland:
+
+.. code:: dosini
+  [x11]
+  dmenu=dmenu -i -p
+  xclip=xclip -selection -clipboard -t image/png
+
+  [wayland]
+  dmenu=bemenu -i -p
+  xclip=wl-copy -t image/png
+
 License
 =======
 

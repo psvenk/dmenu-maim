@@ -4,7 +4,7 @@
 # and copying to the system clipboard, using the entire screen, a selection, or
 # the currently focused window.
 #
-# Last updated 2021-11-17
+# Last updated 2021-11-19
 #
 # Dependencies (X11): dmenu, maim (and slop), xdotool, xclip
 # Dependencies (Wayland): dmenu, grim, slurp, wl-clipboard
@@ -39,26 +39,38 @@ from subprocess import Popen, PIPE, DEVNULL, run, check_output
 from datetime import datetime
 from os import path, remove, getenv
 from tempfile import NamedTemporaryFile
+from configparser import ConfigParser, NoSectionError, NoOptionError
+from shlex import split
 
 if getenv("WAYLAND_DISPLAY"):
-    wayland = True
+    server = "wayland"
 else:
-    wayland = False
+    server = "x11"
 
-# Character used to indicate end of options
-DONE = ";"
+configdir = getenv("XDG_CONFIG_HOME", f"{getenv('HOME')}/.config")
+config = ConfigParser()
+config.read(f"{configdir}/dmenu-maim/config.ini")
 
 # dmenu command line (this will be followed by the prompt)
-DMENU = ["dmenu", "-i", "-p"]
+try:
+    DMENU = split(config.get(server, "dmenu"))
+except (NoSectionError, NoOptionError):
+    DMENU = ["dmenu", "-i", "-p"]
 
 # xclip command line (this will take the image file as stdin)
-if wayland:
-    XCLIP = ["wl-copy", "-t", "image/png"]
-else:
-    XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
+try:
+    XCLIP = split(config.get(server, "xclip"))
+except (NoSectionError, NoOptionError):
+    if server == "x11":
+        XCLIP = ["xclip", "-selection", "clipboard", "-t", "image/png"]
+    else:
+        XCLIP = ["wl-copy", "-t", "image/png"]
 
 # The maim command line needs to be configured manually; there is no easy and
 # Pythonic way to abstract that out
+
+# Character used to indicate end of options
+DONE = ";"
 
 # Available options for screenshot (at least one of 's' or 'c' must be
 # provided)
@@ -123,7 +135,23 @@ if "s" in opts:
 else:
     outfile = NamedTemporaryFile(mode="wb", delete=False)
 
-if wayland:
+if server == "x11":
+    cmdline = ["maim"]
+    if "p" not in opts:
+        # Hide mouse pointer
+        cmdline.append("-u")
+    if mode == "s":
+        # Grab a selection instead of the entire desktop
+        cmdline.append("-s")
+    elif mode == "w":
+        # Grab current window
+        current_window = run(["xdotool", "getactivewindow"],
+                             capture_output=True, text=True).stdout.strip()
+        cmdline.extend(["-i", current_window])
+
+    run(cmdline, stdin=DEVNULL, stdout=outfile, stderr=DEVNULL)
+    outfile.close()
+else:
     cmdline = ["grim"]
     if "p" in opts:
         # Show mouse pointer
@@ -145,22 +173,6 @@ if wayland:
     outfile.close()
     cmdline.append(outfile.name)
     run(cmdline, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
-else:
-    cmdline = ["maim"]
-    if "p" not in opts:
-        # Hide mouse pointer
-        cmdline.append("-u")
-    if mode == "s":
-        # Grab a selection instead of the entire desktop
-        cmdline.append("-s")
-    elif mode == "w":
-        # Grab current window
-        current_window = run(["xdotool", "getactivewindow"],
-                             capture_output=True, text=True).stdout.strip()
-        cmdline.extend(["-i", current_window])
-
-    run(cmdline, stdin=DEVNULL, stdout=outfile, stderr=DEVNULL)
-    outfile.close()
 
 if "c" in opts:
     with open(outfile.name) as infile:
